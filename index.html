@@ -181,7 +181,7 @@ function fit(){
 var trip={dist:+lsGet('trip_dist')||0,moving:+lsGet('trip_moving')||0,max:+lsGet('trip_max')||0};
 function saveTrip(){lsSet('trip_dist',trip.dist);lsSet('trip_moving',trip.moving);lsSet('trip_max',trip.max);}
 function renderTrip(){
-  $('sDist').textContent=(trip.dist/1000).toFixed(trip.dist<100000?1:0);
+  $('sDist').textContent=(trip.dist/1000).toFixed(trip.dist<10000?2:trip.dist<100000?1:0);
   var m=Math.floor(trip.moving/60000);
   $('sTime').textContent=Math.floor(m/60)+':'+pad(m%60);
   $('sMax').textContent=Math.round(trip.max);
@@ -196,9 +196,20 @@ function hav(a,b){
   return 2*R*Math.asin(Math.min(1,Math.sqrt(s)));
 }
 function setGps(cls,txt){$('gps').className=cls;$('gpsTxt').textContent=txt;}
+/* hız: GPS ~1 sn'de bir veri verir; ekran 0.5 sn'de bir yenilenir ve iki veri arasını yumuşak geçirir */
+var gs={prev:null,target:null,at:0};
+function dispKmh(){
+  if(gs.target===null)return null;
+  if(gs.prev===null)return gs.target;
+  var f=Math.min(1,(Date.now()-gs.at)/900);
+  return gs.prev+(gs.target-gs.prev)*f;
+}
+function renderSpeed(){var k=dispKmh();$('speed').textContent=k===null?'--':Math.round(k);}
 function showSpeed(kmh,heading){
   speedKmh=kmh;
-  $('speed').textContent=kmh===null?'--':Math.round(kmh);
+  if(kmh===null){gs.prev=null;gs.target=null;}
+  else{var cur=dispKmh();gs.prev=cur===null?kmh:cur;gs.target=kmh;gs.at=Date.now();}
+  renderSpeed();
   if(heading!==null&&heading!==undefined&&!isNaN(heading)&&heading>=0&&kmh>4){
     $('heading').textContent=DIRS[Math.round(heading/45)%8];
   }
@@ -216,7 +227,6 @@ function onPos(p){
     if(dt>0){
       if(ms===null)ms=d/dt;
       if(c.accuracy<=30&&ms>1&&d/dt<90){trip.dist+=d;}
-      if(ms>1&&dt<10)trip.moving+=dt*1000;
     }
   }
   last=cur;
@@ -410,10 +420,15 @@ window.addEventListener('orientationchange',function(){setTimeout(fit,300);});
 document.addEventListener('visibilitychange',function(){if(!document.hidden)spPoll();});
 document.addEventListener('touchmove',function(e){if(!$('settings').contains(e.target))e.preventDefault();},{passive:false});
 
-tickClock();setInterval(tickClock,5000);
-setInterval(gpsWatchdog,2000);
-setInterval(function(){tickProgress();},1000);
-setInterval(spPoll,3000);
+/* 0.5 sn'lik ana yenileme döngüsü */
+var lastTick=Date.now();
+function fastTick(){
+  var now=Date.now(),dt=now-lastTick;lastTick=now;
+  if(!demo&&gs.target!==null&&gs.target>3&&dt<2000)trip.moving+=dt;
+  gpsWatchdog();renderSpeed();renderTrip();tickClock();tickProgress();
+}
+tickClock();setInterval(fastTick,500);
+setInterval(spPoll,2000);
 renderTrip();fit();startGps();renderMusic();
 spHandleRedirect().then(function(){renderMusic();spPoll();});
 if(/[?&]demo\b/.test(location.search))setDemo(true);
