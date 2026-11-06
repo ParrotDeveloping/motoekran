@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MotoEkran">
+<meta name="theme-color" content="#000000">
+<title>Moto Ekran</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#000;color:#fff;font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+#app{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+/* üst bar */
+#top{display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 14px;border-bottom:1px solid #1a1a1a;flex-shrink:0}
+#clock{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;min-width:80px}
+#gps{font-size:14px;color:#8a8a8a;display:flex;align-items:center}
+#gps i{display:inline-block;width:9px;height:9px;border-radius:50%;background:#555;margin-right:6px}
+#gps.ok i{background:#1ed760}#gps.bad i{background:#ffb020}
+#topR{display:flex;align-items:center;min-width:80px;justify-content:flex-end}
+#heading{font-size:20px;font-weight:600;margin-right:14px}
+#gear{width:40px;height:40px;font-size:24px;color:#8a8a8a}
+/* ana alan */
+#main{flex:1;display:flex;flex-direction:column;min-height:0}
+#speedPanel{flex:1.15;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;min-width:0}
+#speed{font-weight:700;line-height:.9;font-variant-numeric:tabular-nums;letter-spacing:-.03em;font-size:120px}
+#unit{font-size:18px;color:#8a8a8a;letter-spacing:.15em;margin-top:2px}
+#stats{display:flex;width:100%;max-width:420px;margin-top:14px}
+.st{flex:1;text-align:center}
+.st b{display:block;font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.st span{font-size:12px;color:#8a8a8a;letter-spacing:.1em}
+/* müzik */
+#music{flex:1;display:flex;flex-direction:column;justify-content:center;padding:14px 18px;border-top:1px solid #1a1a1a;min-height:0;min-width:0}
+#nowRow{display:flex;align-items:center;min-width:0}
+#art{width:84px;height:84px;border-radius:8px;background:#151515 center/cover no-repeat;flex-shrink:0;margin-right:14px}
+#meta{min-width:0;flex:1}
+#title{font-size:22px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#artist{font-size:16px;color:#a8a8a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
+#device{font-size:12px;color:#1ed760;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bar{height:5px;background:#222;border-radius:3px;margin-top:14px;overflow:hidden}
+#barFill{height:100%;width:0;background:#fff;border-radius:3px}
+#times{display:flex;justify-content:space-between;font-size:12px;color:#8a8a8a;margin-top:5px;font-variant-numeric:tabular-nums}
+#ctrls{display:flex;justify-content:space-around;align-items:center;margin-top:8px}
+.cb{width:76px;height:64px;display:flex;align-items:center;justify-content:center;border-radius:14px}
+.cb:active{background:#1a1a1a}
+.cb svg{fill:#fff;width:34px;height:34px}
+#play{width:84px;height:72px;background:#fff;border-radius:36px}
+#play svg{fill:#000;width:38px;height:38px}
+#spMsg{font-size:13px;color:#ffb020;text-align:center;margin-top:6px;min-height:16px}
+#connect{display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#connect p{color:#8a8a8a;font-size:14px;margin-bottom:12px;max-width:320px}
+.btn{background:#1ed760;color:#000;font-weight:700;font-size:17px;padding:14px 26px;border-radius:30px}
+.btn.alt{background:#222;color:#fff}
+#music.off #player{display:none}#music.off #connect{display:flex}
+/* yatay */
+@media (orientation:landscape){
+  #main{flex-direction:row}
+  #music{border-top:0;border-left:1px solid #1a1a1a}
+  #stats{margin-top:10px}
+}
+/* ayarlar */
+#settings{display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:#000;z-index:5;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 18px 40px;-webkit-user-select:text;user-select:text}
+#settings.show{display:block}
+#settings h2{font-size:22px;margin-bottom:4px}
+#settings h3{font-size:15px;color:#8a8a8a;margin:22px 0 8px;letter-spacing:.06em;text-transform:uppercase}
+#settings p,#settings li{font-size:14px;color:#bbb;line-height:1.45}
+#settings ol{padding-left:20px}
+#settings input,#settings textarea{width:100%;background:#111;border:1px solid #333;color:#fff;border-radius:8px;padding:11px;font-size:15px;font-family:Menlo,monospace;margin-top:6px}
+#settings textarea{height:70px;resize:none}
+.row{display:flex;flex-wrap:wrap;margin-top:10px}
+.row .btn{margin:0 10px 10px 0;font-size:15px;padding:11px 18px}
+#closeSet{position:absolute;top:10px;right:12px;font-size:30px;width:44px;height:44px;color:#8a8a8a}
+code{background:#151515;padding:2px 5px;border-radius:4px;font-size:13px;word-break:break-all;color:#fff}
+#setMsg{color:#1ed760;font-size:14px;margin-top:8px;min-height:18px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top">
+    <div id="clock">--:--</div>
+    <div id="gps"><i></i><span id="gpsTxt">GPS başlatılıyor</span></div>
+    <div id="topR"><div id="heading">–</div><button id="gear" aria-label="Ayarlar">⚙︎</button></div>
+  </div>
+  <div id="main">
+    <div id="speedPanel">
+      <div id="speed">--</div>
+      <div id="unit">KM/SA</div>
+      <div id="stats">
+        <div class="st"><b id="sDist">0.0</b><span>KM</span></div>
+        <div class="st"><b id="sTime">0:00</b><span>SÜRÜŞ</span></div>
+        <div class="st"><b id="sMax">0</b><span>MAKS</span></div>
+      </div>
+    </div>
+    <div id="music" class="off">
+      <div id="player">
+        <div id="nowRow">
+          <div id="art"></div>
+          <div id="meta">
+            <div id="title">—</div>
+            <div id="artist"></div>
+            <div id="device"></div>
+          </div>
+        </div>
+        <div id="bar"><div id="barFill"></div></div>
+        <div id="times"><span id="tCur">0:00</span><span id="tDur">0:00</span></div>
+        <div id="ctrls">
+          <button class="cb" id="prev" aria-label="Önceki"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM9.5 12L19 5v14z"/></svg></button>
+          <button class="cb" id="play" aria-label="Oynat/Duraklat"><svg viewBox="0 0 24 24" id="playIco"><path d="M8 5v14l11-7z"/></svg></button>
+          <button class="cb" id="next" aria-label="Sonraki"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM5 5l9.5 7L5 19z"/></svg></button>
+        </div>
+        <div id="spMsg"></div>
+      </div>
+      <div id="connect">
+        <p id="connectTxt">Ana telefonunda çalan Spotify'ı buradan gör ve kontrol et.</p>
+        <button class="btn" id="connectBtn">Spotify'a bağlan</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settings">
+    <button id="closeSet" aria-label="Kapat">×</button>
+    <h2>Ayarlar</h2>
+    <p>Ekranın kapanmaması için: iPhone Ayarlar › Ekran ve Parlaklık › Otomatik Kilit › <b>Asla</b></p>
+
+    <h3>Spotify</h3>
+    <ol>
+      <li><code>developer.spotify.com/dashboard</code> adresinde Spotify hesabınla giriş yap, <b>Create app</b> de.</li>
+      <li>Redirect URI kısmına tam olarak şunu yaz:<br><code id="redir"></code></li>
+      <li>"Web API" seçeneğini işaretle, kaydet. Uygulamanın <b>Client ID</b>'sini kopyalayıp aşağıya yapıştır.</li>
+    </ol>
+    <input id="clientId" placeholder="Client ID" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="row">
+      <button class="btn" id="saveConnect">Kaydet ve bağlan</button>
+      <button class="btn alt" id="disconnect">Bağlantıyı kes</button>
+    </div>
+    <p>Not: Şarkı bilgisi ücretsiz hesapta da görünür; ileri/geri/durdur için <b>Premium</b> gerekir. iPhone 6'nın internete bağlı olması lazım (ana telefonun hotspot'u yeter).</p>
+
+    <h3>Bağlantıyı taşı</h3>
+    <p>Ana ekrandan açınca giriş Safari'de kalırsa: Safari'de bu kodu kopyala, ana ekran uygulamasında aşağıya yapıştırıp "İçe aktar"a bas.</p>
+    <textarea id="exportBox" readonly></textarea>
+    <textarea id="importBox" placeholder="Kodu buraya yapıştır"></textarea>
+    <div class="row"><button class="btn alt" id="importBtn">İçe aktar</button></div>
+
+    <h3>Yolculuk</h3>
+    <div class="row">
+      <button class="btn alt" id="resetTrip">Yolculuğu sıfırla</button>
+      <button class="btn alt" id="demoBtn">Demo modu: kapalı</button>
+    </div>
+    <div id="setMsg"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+function $(id){return document.getElementById(id);}
+function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function lsSet(k,v){try{if(v===null||v===undefined||v==='')localStorage.removeItem(k);else localStorage.setItem(k,String(v));}catch(e){}}
+function pad(n){return n<10?'0'+n:''+n;}
+function fmtMs(ms){var s=Math.max(0,Math.floor(ms/1000));return Math.floor(s/60)+':'+pad(s%60);}
+
+var demo=false;
+
+/* ---------- saat ---------- */
+function tickClock(){var d=new Date();$('clock').textContent=pad(d.getHours())+':'+pad(d.getMinutes());}
+
+/* ---------- boyutlandırma ---------- */
+function fit(){
+  var p=$('speedPanel'),w=p.clientWidth,h=p.clientHeight;
+  var fs=Math.max(60,Math.min(h*0.56,w*0.42));
+  $('speed').style.fontSize=Math.round(fs)+'px';
+  var portrait=window.innerHeight>window.innerWidth;
+  var a=Math.round(Math.max(56,Math.min(portrait?110:90,(portrait?h:w)*0.28)));
+  $('art').style.width=a+'px';$('art').style.height=a+'px';
+}
+
+/* ---------- yolculuk ---------- */
+var trip={dist:+lsGet('trip_dist')||0,moving:+lsGet('trip_moving')||0,max:+lsGet('trip_max')||0};
+function saveTrip(){lsSet('trip_dist',trip.dist);lsSet('trip_moving',trip.moving);lsSet('trip_max',trip.max);}
+function renderTrip(){
+  $('sDist').textContent=(trip.dist/1000).toFixed(trip.dist<100000?1:0);
+  var m=Math.floor(trip.moving/60000);
+  $('sTime').textContent=Math.floor(m/60)+':'+pad(m%60);
+  $('sMax').textContent=Math.round(trip.max);
+}
+
+/* ---------- GPS ---------- */
+var DIRS=['K','KD','D','GD','G','GB','B','KB'];
+var last=null,lastFix=0,speedKmh=null;
+function hav(a,b){
+  var R=6371000,r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r;
+  var s=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)*Math.sin(dLo/2);
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(s)));
+}
+function setGps(cls,txt){$('gps').className=cls;$('gpsTxt').textContent=txt;}
+function showSpeed(kmh,heading){
+  speedKmh=kmh;
+  $('speed').textContent=kmh===null?'--':Math.round(kmh);
+  if(heading!==null&&heading!==undefined&&!isNaN(heading)&&heading>=0&&kmh>4){
+    $('heading').textContent=DIRS[Math.round(heading/45)%8];
+  }
+}
+function onPos(p){
+  if(demo)return;
+  var c=p.coords,t=p.timestamp||Date.now();
+  var cur={lat:c.latitude,lon:c.longitude,t:t};
+  var ms=(c.speed!==null&&c.speed>=0&&!isNaN(c.speed))?c.speed:null;
+  lastFix=Date.now();
+  if(c.accuracy>50){setGps('bad','GPS zayıf ±'+Math.round(c.accuracy)+'m');}
+  else setGps('ok','GPS ±'+Math.round(c.accuracy)+'m');
+  if(last){
+    var dt=(t-last.t)/1000,d=hav(last,cur);
+    if(dt>0){
+      if(ms===null)ms=d/dt;
+      if(c.accuracy<=30&&ms>1&&d/dt<90){trip.dist+=d;}
+      if(ms>1&&dt<10)trip.moving+=dt*1000;
+    }
+  }
+  last=cur;
+  var kmh=ms===null?0:ms*3.6;
+  if(kmh<2)kmh=0;
+  if(kmh>trip.max&&c.accuracy<=30)trip.max=kmh;
+  showSpeed(kmh,c.heading);
+  saveTrip();renderTrip();
+}
+function onPosErr(e){
+  if(demo)return;
+  if(e.code===1)setGps('bad','Konum izni yok');
+  else setGps('bad','GPS aranıyor');
+}
+function startGps(){
+  if(!navigator.geolocation){setGps('bad','GPS desteklenmiyor');return;}
+  if(!window.isSecureContext&&location.protocol!=='https:'&&location.hostname!=='localhost'){setGps('bad','HTTPS gerekli');}
+  navigator.geolocation.watchPosition(onPos,onPosErr,{enableHighAccuracy:true,maximumAge:0,timeout:15000});
+}
+function gpsWatchdog(){
+  if(demo)return;
+  if(lastFix&&Date.now()-lastFix>6000){showSpeed(null);setGps('bad','GPS aranıyor');}
+}
+
+/* ---------- Spotify ---------- */
+var SCOPES='user-read-playback-state user-modify-playback-state user-read-currently-playing';
+var sp={client:lsGet('sp_client')||'',access:lsGet('sp_access'),exp:+lsGet('sp_exp')||0,refresh:lsGet('sp_refresh')};
+var np=null; // çalan parça
+function spSave(){lsSet('sp_client',sp.client);lsSet('sp_access',sp.access);lsSet('sp_exp',sp.exp);lsSet('sp_refresh',sp.refresh);}
+function spConnected(){return !!(sp.client&&sp.refresh);}
+function redirectUri(){return location.protocol+'//'+location.host+location.pathname;}
+function spMsg(t){$('spMsg').textContent=t||'';}
+function b64url(buf){var s='',b=new Uint8Array(buf);for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function randStr(n){var a=new Uint8Array(n);crypto.getRandomValues(a);return b64url(a);}
+function enc(o){return Object.keys(o).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(o[k]);}).join('&');}
+function parseQuery(s){var o={};s.replace(/^\?/,'').split('&').forEach(function(p){if(!p)return;var i=p.indexOf('=');o[decodeURIComponent(i<0?p:p.slice(0,i))]=i<0?'':decodeURIComponent(p.slice(i+1).replace(/\+/g,' '));});return o;}
+
+async function spLogin(){
+  if(!sp.client){openSettings();setMsg('Önce Client ID gir');return;}
+  if(!window.crypto||!crypto.subtle){alert('Spotify girişi için sayfa HTTPS üzerinden açılmalı.');return;}
+  var v=randStr(48),st=randStr(12);
+  lsSet('sp_verifier',v);lsSet('sp_state',st);
+  var ch=b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));
+  location.href='https://accounts.spotify.com/authorize?'+enc({client_id:sp.client,response_type:'code',redirect_uri:redirectUri(),
+    code_challenge_method:'S256',code_challenge:ch,scope:SCOPES,state:st});
+}
+async function spToken(params){
+  var r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:enc(params)});
+  var j={};try{j=await r.json();}catch(e){}
+  if(!r.ok){var err=new Error(j.error_description||j.error||('HTTP '+r.status));err.fatal=(j.error==='invalid_grant'||j.error==='invalid_client');throw err;}
+  sp.access=j.access_token;sp.exp=Date.now()+((j.expires_in||3600)-60)*1000;
+  if(j.refresh_token)sp.refresh=j.refresh_token;
+  spSave();renderExport();
+}
+async function spHandleRedirect(){
+  var q=parseQuery(location.search);
+  if(!q.code&&!q.error)return;
+  history.replaceState(null,'',redirectUri());
+  if(q.error){spMsg('Spotify girişi iptal edildi');return;}
+  if(q.state!==lsGet('sp_state')){spMsg('Giriş doğrulanamadı, tekrar dene');return;}
+  try{
+    await spToken({grant_type:'authorization_code',code:q.code,redirect_uri:redirectUri(),client_id:sp.client,code_verifier:lsGet('sp_verifier')});
+  }catch(e){spMsg('Bağlantı hatası: '+e.message);}
+  lsSet('sp_verifier',null);lsSet('sp_state',null);
+}
+async function spRefresh(){
+  try{await spToken({grant_type:'refresh_token',refresh_token:sp.refresh,client_id:sp.client});return true;}
+  catch(e){if(e.fatal){sp.refresh=null;sp.access=null;spSave();renderMusic();}spMsg('Spotify: '+e.message);return false;}
+}
+async function spApi(method,path,retried){
+  if(!spConnected())return {status:0};
+  if(!sp.access||Date.now()>sp.exp){if(!(await spRefresh()))return {status:401};}
+  var r=await fetch('https://api.spotify.com/v1'+path,{method:method,headers:{Authorization:'Bearer '+sp.access}});
+  if(r.status===401&&!retried){sp.exp=0;return spApi(method,path,true);}
+  var data=null;
+  if(r.status!==204){try{data=await r.json();}catch(e){}}
+  return {status:r.status,data:data};
+}
+function parsePlayer(d){
+  var it=d.item;
+  if(!it)return {title:d.currently_playing_type==='ad'?'Reklam':'—',artist:'',art:'',dur:0,prog:0,playing:d.is_playing,at:Date.now(),dev:d.device?d.device.name:''};
+  var imgs=it.album?it.album.images:(it.images||[]);
+  var artist=it.artists?it.artists.map(function(a){return a.name;}).join(', '):(it.show?it.show.name:'');
+  return {title:it.name,artist:artist,art:imgs.length?(imgs[1]||imgs[0]).url:'',dur:it.duration_ms||0,prog:d.progress_ms||0,
+    playing:!!d.is_playing,at:Date.now(),dev:d.device?d.device.name:''};
+}
+var polling=false;
+async function spPoll(){
+  if(demo||polling||document.hidden||!spConnected())return;
+  polling=true;
+  try{
+    var r=await spApi('GET','/me/player?additional_types=episode');
+    if(r.status===200&&r.data){np=parsePlayer(r.data);if($('spMsg').textContent.indexOf('Çalan')===0)spMsg('');}
+    else if(r.status===204||r.status===200){np=null;spMsg('Çalan bir şey yok. Ana telefonunda Spotify\'ı aç.');}
+    else if(r.status===429)spMsg('Spotify yavaşlattı, bekleniyor…');
+  }catch(e){spMsg('İnternet bağlantısı yok');}
+  polling=false;
+  renderMusic();
+}
+function curProg(){if(!np)return 0;var p=np.playing?np.prog+(Date.now()-np.at):np.prog;return np.dur?Math.min(p,np.dur):p;}
+async function spCmd(kind){
+  if(demo){demoCmd(kind);return;}
+  if(!spConnected())return;
+  var m='POST',p;
+  if(kind==='toggle'){m='PUT';p=(np&&np.playing)?'/me/player/pause':'/me/player/play';
+    if(np){np.prog=curProg();np.at=Date.now();np.playing=!np.playing;renderMusic();}}
+  else p=kind==='next'?'/me/player/next':'/me/player/previous';
+  try{
+    var r=await spApi(m,p);
+    if(r.status===403)spMsg('Kontrol için Spotify Premium gerekiyor');
+    else if(r.status===404)spMsg('Aktif cihaz yok. Ana telefonunda Spotify\'ı aç.');
+    else if(r.status>=200&&r.status<300)spMsg('');
+  }catch(e){spMsg('İnternet bağlantısı yok');}
+  setTimeout(spPoll,700);
+}
+var PLAY='<path d="M8 5v14l11-7z"/>',PAUSE='<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
+var lastArt=null;
+function renderMusic(){
+  var on=demo||spConnected();
+  $('music').className=on?'':'off';
+  if(!on){$('connectTxt').textContent=sp.client?'Spotify bağlantısı yok.':'Ana telefonunda çalan Spotify\'ı buradan gör ve kontrol et.';return;}
+  if(!np){$('title').textContent='Çalan bir şey yok';$('artist').textContent='';$('device').textContent='';$('barFill').style.width='0';
+    $('tCur').textContent='0:00';$('tDur').textContent='0:00';$('playIco').innerHTML=PLAY;setArt('');return;}
+  $('title').textContent=np.title;$('artist').textContent=np.artist;
+  $('device').textContent=np.dev?'▶ '+np.dev:'';
+  $('playIco').innerHTML=np.playing?PAUSE:PLAY;
+  setArt(np.art);
+  tickProgress();
+}
+function setArt(u){if(u===lastArt)return;lastArt=u;$('art').style.backgroundImage=u?'url("'+u+'")':'none';}
+function tickProgress(){
+  if(!np)return;var p=curProg();
+  $('barFill').style.width=(np.dur?p/np.dur*100:0)+'%';
+  $('tCur').textContent=fmtMs(p);$('tDur').textContent=fmtMs(np.dur);
+  if(!demo&&np.playing&&np.dur&&p>=np.dur)setTimeout(spPoll,800);
+}
+
+/* ---------- demo ---------- */
+var DEMO_SONGS=[['Gece Yolu','Demo Sanatçı',214000],['Sahil Virajı','Örnek Grup',187000],['Rüzgar','Test Akustik',241000]];
+var demoIdx=0,demoT0=0,demoTimer=null;
+function demoSong(){var s=DEMO_SONGS[demoIdx];np={title:s[0],artist:s[1],art:'',dur:s[2],prog:0,playing:true,at:Date.now(),dev:'Demo cihaz'};}
+function demoCmd(k){
+  if(k==='toggle'){np.prog=curProg();np.at=Date.now();np.playing=!np.playing;}
+  else{demoIdx=(demoIdx+(k==='next'?1:DEMO_SONGS.length-1))%DEMO_SONGS.length;demoSong();}
+  renderMusic();
+}
+function setDemo(v){
+  demo=v;$('demoBtn').textContent='Demo modu: '+(v?'açık':'kapalı');
+  clearInterval(demoTimer);
+  if(v){
+    demoT0=Date.now();demoSong();setGps('ok','DEMO');
+    demoTimer=setInterval(function(){
+      var t=(Date.now()-demoT0)/1000,k=Math.max(0,62+38*Math.sin(t/6)+6*Math.sin(t*1.7));
+      showSpeed(k,(t*8)%360);
+    },500);
+  }else{np=null;showSpeed(null);setGps('','GPS aranıyor');spPoll();}
+  renderMusic();
+}
+
+/* ---------- ayarlar ---------- */
+function setMsg(t){$('setMsg').textContent=t||'';}
+function renderExport(){$('exportBox').value=spConnected()?btoa(JSON.stringify({c:sp.client,r:sp.refresh})):'';}
+function openSettings(){$('clientId').value=sp.client;$('redir').textContent=redirectUri();renderExport();setMsg('');$('settings').className='show';}
+function closeSettings(){$('settings').className='';fit();}
+
+function tap(id,fn){$(id).addEventListener('click',function(e){e.preventDefault();fn();});}
+tap('gear',openSettings);tap('closeSet',closeSettings);
+tap('connectBtn',spLogin);
+tap('saveConnect',function(){
+  var v=$('clientId').value.replace(/\s+/g,'');
+  if(!/^[0-9a-f]{32}$/i.test(v)){setMsg('Client ID 32 karakter olmalı, kontrol et');return;}
+  if(v!==sp.client){sp.refresh=null;sp.access=null;}
+  sp.client=v;spSave();spLogin();
+});
+tap('disconnect',function(){sp.refresh=null;sp.access=null;sp.exp=0;spSave();np=null;renderMusic();renderExport();setMsg('Bağlantı kesildi');});
+tap('importBtn',function(){
+  try{var o=JSON.parse(atob($('importBox').value.replace(/\s+/g,'')));
+    if(!o.c||!o.r)throw 0;sp.client=o.c;sp.refresh=o.r;sp.access=null;sp.exp=0;spSave();
+    $('importBox').value='';$('clientId').value=sp.client;renderMusic();spPoll();setMsg('Bağlantı aktarıldı ✓');
+  }catch(e){setMsg('Kod geçersiz');}
+});
+tap('resetTrip',function(){trip={dist:0,moving:0,max:0};saveTrip();renderTrip();setMsg('Yolculuk sıfırlandı');});
+tap('demoBtn',function(){setDemo(!demo);});
+tap('play',function(){spCmd('toggle');});
+tap('next',function(){spCmd('next');});
+tap('prev',function(){spCmd('prev');});
+
+/* ---------- başlat ---------- */
+window.addEventListener('resize',fit);
+window.addEventListener('orientationchange',function(){setTimeout(fit,300);});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)spPoll();});
+document.addEventListener('touchmove',function(e){if(!$('settings').contains(e.target))e.preventDefault();},{passive:false});
+
+tickClock();setInterval(tickClock,5000);
+setInterval(gpsWatchdog,2000);
+setInterval(function(){tickProgress();},1000);
+setInterval(spPoll,3000);
+renderTrip();fit();startGps();renderMusic();
+spHandleRedirect().then(function(){renderMusic();spPoll();});
+if(/[?&]demo\b/.test(location.search))setDemo(true);
+})();
+</script>
+</body>
+</html>
